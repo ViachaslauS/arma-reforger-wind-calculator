@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Arma Reforger SVD Wind Calculator</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#222;
+    color:white;
+    display:flex;
+    justify-content:center;
+    padding:40px;
+}
+
+.container{
+    width:360px;
+    background:#333;
+    padding:20px;
+    border-radius:10px;
+}
+
+h2{
+    text-align:center;
+}
+
+label{
+    display:block;
+    margin-top:15px;
+}
+
+input{
+    width:100%;
+    box-sizing:border-box;
+    padding:8px;
+    margin-top:5px;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    margin-top:20px;
+    padding:12px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+.result{
+    margin-top:25px;
+    font-size:22px;
+    text-align:center;
+    font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h2>SVD Wind Calculator</h2>
+
+<label>
+Distance (m)
+<input id="distance" type="number" value="600">
+</label>
+
+<label>
+Target Azimuth (°)
+<input id="targetAzimuth" type="number" value="270">
+</label>
+
+<label>
+Wind Speed (m/s)
+<input id="windSpeed" type="number" value="10">
+</label>
+
+<label>
+Wind Direction (°)
+<input id="windAzimuth" type="number" value="180">
+</label>
+
+<label>
+Coefficient
+<input id="coef" type="number" value="1400">
+</label>
+
+<button onclick="calculate()">
+Calculate
+</button>
+
+<div class="result" id="result"></div>
+
+</div>
+
+<script>
+
+function normalizeAngle(angle)
+{
+    return ((angle + 540) % 360) - 180;
+}
+
+function calculate()
+{
+    const distance = Number(document.getElementById("distance").value);
+    const windSpeed = Number(document.getElementById("windSpeed").value);
+    const targetAzimuth = Number(document.getElementById("targetAzimuth").value);
+    const windAzimuth = Number(document.getElementById("windAzimuth").value);
+
+    const delta =
+        normalizeAngle(targetAzimuth - windAzimuth);
+
+    const crossWind =
+        windSpeed * Math.sin(delta * Math.PI / 180);
+
+    const coef = Number(document.getElementById("coef").value);
+    const hold = distance * crossWind / coef;
+
+    const marks = Math.abs(hold).toFixed(1);
+
+    let direction;
+
+    if (Math.abs(hold) < 0.05)
+    {
+        direction = "no need to correct";
+    }
+    else if (hold > 0)
+    {
+        direction = `${marks} points right`;
+    }
+    else
+    {
+        direction = `${marks} points left`;
+    }
+
+    document.getElementById("result").innerHTML =
+        direction;
+}
+
+calculate();
+
+</script>
+
+</body>
+</html>
