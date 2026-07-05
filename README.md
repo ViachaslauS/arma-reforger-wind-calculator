@@ -49,7 +49,7 @@ Hold(mrad) = Distance × Crosswind / 1400
 
 Distance is measured in meters.
 
-The constant **1400** is empirical. It was obtained by firing hundreds of test shots with the SVD and several NATO rifles. At the moment it appears universal for every tested rifle.
+The constant **1400** is empirical. It was obtained by firing test shots with the SVD and M21. At the moment it appears universal for every tested rifle.
 
 ### 1.4 Examples
 
