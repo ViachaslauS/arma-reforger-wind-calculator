@@ -35,12 +35,19 @@
               <label for="targetAzimuth">Azimuth (°)</label>
               <input id="targetAzimuth" type="number" step="1" value="270">
             </div>
-            <div class="field">
-              <label for="distance">Distance (m)</label>
-              <input id="distance" type="number" min="0" step="1" value="600">
-            </div>
+          <div class="field">
+            <label for="distance">Distance (m)</label>
+            <input id="distance" type="number" min="0" step="1" value="600">
           </div>
-        </section>
+          <div class="field field--full">
+            <label for="targetMarker">Show target as</label>
+            <select id="targetMarker">
+              <option value="stick">Green stick</option>
+              <option value="soldier">Soldier (1.8 m)</option>
+            </select>
+          </div>
+        </div>
+      </section>
 
         <section class="section">
           <h2 class="section-title">Scope</h2>
