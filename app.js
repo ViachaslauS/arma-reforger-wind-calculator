@@ -37,13 +37,44 @@ const DEFAULTS = {
 const soldierImage = new Image();
 soldierImage.src = "res/soldier.png";
 
+// Offscreen canvas holding the soldier recolored to green (built once after load)
+let soldierSprite = null;
+
+// The source art is dark lines on a white background. Recolor it to green lines
+// on black using composite ops only (no pixel readback, so it also works from file://):
+// 1) flatten onto white, 2) invert to white-on-black, 3) multiply with green.
+// The sprite is later drawn with "screen" blending, which makes black transparent.
+function buildSoldierSprite() {
+  if (!soldierImage.complete || !soldierImage.naturalWidth) return;
+
+  const flattened = document.createElement("canvas");
+  flattened.width = soldierImage.naturalWidth;
+  flattened.height = soldierImage.naturalHeight;
+  const flatCtx = flattened.getContext("2d");
+  flatCtx.fillStyle = "#fff";
+  flatCtx.fillRect(0, 0, flattened.width, flattened.height);
+  flatCtx.drawImage(soldierImage, 0, 0);
+
+  const tinted = document.createElement("canvas");
+  tinted.width = flattened.width;
+  tinted.height = flattened.height;
+  const tintCtx = tinted.getContext("2d");
+  tintCtx.fillStyle = "#3dff3d";
+  tintCtx.fillRect(0, 0, tinted.width, tinted.height);
+  tintCtx.globalCompositeOperation = "multiply";
+  tintCtx.filter = "invert(1)";
+  tintCtx.drawImage(flattened, 0, 0);
+
+  soldierSprite = tinted;
+}
+
 const elements = {
   windSpeed: document.getElementById("windSpeed"),
   windAzimuth: document.getElementById("windAzimuth"),
   targetAzimuth: document.getElementById("targetAzimuth"),
   distance: document.getElementById("distance"),
   artZoom: document.getElementById("artZoom"),
-  targetMarker: document.getElementById("targetMarker"),
+  targetMarkerRadios: document.querySelectorAll('input[name="targetMarker"]'),
   holdFormulaDivisor: document.getElementById("holdFormulaDivisor"),
   zoomSuggest: document.getElementById("zoomSuggest"),
   results: document.getElementById("results"),
@@ -129,19 +160,19 @@ function canvasHeightFor(soldierPixelHeight) {
   return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, needed));
 }
 
-// Draws the soldier so his chest sits on the scope's horizontal line.
-// Returns false when the image is not available yet.
+// Draws the green soldier so his chest sits on the scope's horizontal line.
+// Returns false when the sprite is not available yet.
 function drawSoldier(ctx, x, cy, pixelHeight) {
-  if (!soldierImage.complete || !soldierImage.naturalWidth) {
+  if (soldierSprite === null) {
     return false;
   }
 
-  const width = pixelHeight * (soldierImage.naturalWidth / soldierImage.naturalHeight);
+  const width = pixelHeight * (soldierSprite.width / soldierSprite.height);
   const top = cy - pixelHeight * SOLDIER_CHEST_FROM_TOP;
-  // The artwork is dark line art; invert it so it stays visible on the dark canvas
-  ctx.filter = "invert(1)";
-  ctx.drawImage(soldierImage, x - width / 2, top, width, pixelHeight);
-  ctx.filter = "none";
+  // "screen" blending drops the sprite's black background, keeping only green lines
+  ctx.globalCompositeOperation = "screen";
+  ctx.drawImage(soldierSprite, x - width / 2, top, width, pixelHeight);
+  ctx.globalCompositeOperation = "source-over";
   return true;
 }
 
@@ -278,7 +309,7 @@ function readInputs() {
     targetAzimuth: Number(elements.targetAzimuth.value),
     windAzimuth: Number(elements.windAzimuth.value),
     artZoom: Number(elements.artZoom.value),
-    targetMarker: elements.targetMarker.value,
+    targetMarker: document.querySelector('input[name="targetMarker"]:checked').value,
   };
 }
 
@@ -303,7 +334,11 @@ function loadSettings() {
     elements.targetAzimuth.value = saved.targetAzimuth ?? DEFAULTS.targetAzimuth;
     elements.windAzimuth.value = saved.windAzimuth ?? DEFAULTS.windAzimuth;
     elements.artZoom.value = String(saved.artZoom ?? DEFAULTS.artZoom);
-    elements.targetMarker.value = saved.targetMarker ?? DEFAULTS.targetMarker;
+
+    const marker = saved.targetMarker ?? DEFAULTS.targetMarker;
+    for (const radio of elements.targetMarkerRadios) {
+      radio.checked = radio.value === marker;
+    }
   } catch {
     // Ignore corrupt storage
   }
@@ -384,7 +419,6 @@ function init() {
     elements.targetAzimuth,
     elements.distance,
     elements.artZoom,
-    elements.targetMarker,
     elements.holdFormulaDivisor,
   ];
 
@@ -400,8 +434,16 @@ function init() {
     }
   }
 
+  for (const radio of elements.targetMarkerRadios) {
+    radio.addEventListener("change", calculate);
+  }
+
   elements.zoomSuggest.addEventListener("click", applySuggestedZoom);
-  soldierImage.addEventListener("load", calculate);
+  soldierImage.addEventListener("load", () => {
+    buildSoldierSprite();
+    calculate();
+  });
+  buildSoldierSprite();
 
   calculate();
 }

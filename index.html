@@ -39,13 +39,19 @@
             <label for="distance">Distance (m)</label>
             <input id="distance" type="number" min="0" step="1" value="600">
           </div>
-          <div class="field field--full">
-            <label for="targetMarker">Show target as</label>
-            <select id="targetMarker">
-              <option value="stick">Green stick</option>
-              <option value="soldier">Soldier (1.8 m)</option>
-            </select>
-          </div>
+          <fieldset class="field field--full marker-field">
+            <legend>Show target as</legend>
+            <div class="radio-row">
+              <label class="radio-option">
+                <input type="radio" name="targetMarker" value="stick" checked>
+                Green stick
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="targetMarker" value="soldier">
+                Soldier (1.8 m)
+              </label>
+            </div>
+          </fieldset>
         </div>
       </section>
 

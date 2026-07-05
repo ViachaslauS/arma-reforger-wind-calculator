@@ -77,6 +77,39 @@ body {
   grid-column: 1 / -1;
 }
 
+.marker-field {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.marker-field legend {
+  padding: 0;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.radio-row {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.field label.radio-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.radio-option input {
+  width: auto;
+  margin: 0;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
 .field label {
   display: block;
   margin-bottom: 0.25rem;
