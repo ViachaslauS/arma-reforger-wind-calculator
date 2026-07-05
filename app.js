@@ -64,9 +64,9 @@ function pointMilAtZoom(zoom) {
 }
 
 // README rule: choose the highest magnification where DotHold <= 1, keeping the
-// hold inside the first dot. If the hold exceeds the largest dot value (2.5 mrad
-// at 3x), fall back to the zoom where the hold lands closest to a whole number
-// of dot spacings, preferring fewer spacings when accuracy is comparable.
+// hold inside the single reference dot. If the hold exceeds the largest dot
+// value (2.5 mrad at 3x), no zoom can fit it, so use the lowest magnification:
+// its dot is the closest reference to the hold.
 function suggestZoom(holdMilValue, currentZoom) {
   const absHold = Math.abs(holdMilValue);
   if (absHold < 0.05) {
@@ -79,27 +79,8 @@ function suggestZoom(holdMilValue, currentZoom) {
       highestFitting = zoom;
     }
   }
-  if (highestFitting !== null) {
-    return highestFitting;
-  }
 
-  let best = null;
-  for (const zoom of ZOOM_LEVELS) {
-    const spacings = absHold / pointMilAtZoom(zoom);
-    const dotCount = Math.max(1, Math.round(spacings));
-    const error = Math.abs(spacings - dotCount);
-
-    const isBetter =
-      best === null ||
-      error < best.error - 0.02 ||
-      (Math.abs(error - best.error) <= 0.02 && dotCount < best.dotCount);
-
-    if (isBetter) {
-      best = { zoom, error, dotCount };
-    }
-  }
-
-  return best.zoom;
+  return highestFitting ?? ZOOM_LEVELS[0];
 }
 
 function holdDirection(holdMilValue) {
