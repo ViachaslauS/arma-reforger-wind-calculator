@@ -1,61 +1,118 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Reforger Wind Calculator</title>
-<style>
-body{font-family:Arial;background:#222;color:#eee;max-width:900px;margin:auto;padding:20px}
-.box{background:#333;padding:15px;border-radius:8px}
-label{display:block;margin:8px 0}input,select{width:120px}
-.row{display:flex;gap:20px}.col{flex:1}canvas{background:#111;border:1px solid #555}
-</style></head><body><div class="box">
-<h2>Arma Reforger Wind Calculator</h2>
-<label>Distance (m) <input id=d type=number value=600></label>
-<label>Wind Speed (m/s) <input id=ws type=number value=10></label>
-<label>Target Azimuth <input id=ta type=number value=270></label>
-<label>Wind Azimuth <input id=wa type=number value=180></label>
-<label>Current ART II Zoom
-<select id=z><option>3</option><option>3.5</option><option>4</option><option>4.5</option><option>5</option><option>5.5</option><option>6</option><option>6.5</option><option>7</option><option>7.5</option><option>8</option><option>8.5</option><option>9</option></select></label>
-<button onclick="calc()">Calculate</button>
-<h3 id=r></h3><p id=pso></p><p id=art></p>
-<div class=row><div class=col><b>PSO-1</b><br><canvas id=psoC width=400 height=120></canvas></div>
-<div class=col><b>ART II</b><br><canvas id=artC width=400 height=120></canvas></div></div>
-</div><script>
-const zooms=[3,3.5,4,4.5,5,5.5,6,6.5,7,7.5,8,8.5,9];
-function norm(a){return ((a+540)%360)-180;}
-function pointMil(z){return 2.5*3/z;}
-function bestZoom(hold){
- for(let z of zooms){if(Math.abs(hold)<=pointMil(z)+1e-6)return z;}
- return 3;
-}
-function drawPSO(hold){
- let c=psoC,ctx=c.getContext("2d"),cx=200,cy=60,s=30;
- ctx.fillStyle="#111";ctx.fillRect(0,0,c.width,c.height);
- ctx.strokeStyle="white";
- ctx.beginPath();ctx.moveTo(20,cy);ctx.lineTo(380,cy);ctx.stroke();
- for(let i=-5;i<=5;i++){let x=cx+i*s;ctx.beginPath();ctx.moveTo(x,cy-8);ctx.lineTo(x,cy+8);ctx.stroke();}
- // chevron
- ctx.beginPath();ctx.moveTo(cx-8,cy);ctx.lineTo(cx,cy+10);ctx.lineTo(cx+8,cy);ctx.stroke();
- let ax=cx+hold*s;ctx.strokeStyle="lime";
- ctx.beginPath();ctx.moveTo(ax,15);ctx.lineTo(ax,45);ctx.stroke();
-}
-function drawART(hold,z){
- let c=artC,ctx=c.getContext("2d"),cx=200,cy=60,s=30;
- ctx.fillStyle="#111";ctx.fillRect(0,0,c.width,c.height);
- ctx.strokeStyle="white";
- ctx.beginPath();ctx.moveTo(20,cy);ctx.lineTo(380,cy);ctx.stroke();
- ctx.beginPath();ctx.moveTo(cx,cy-18);ctx.lineTo(cx,cy+18);ctx.stroke();
- let off=pointMil(z)*s;
- for(let x of [cx-off,cx+off]){ctx.beginPath();ctx.arc(x,cy,4,0,6.28);ctx.fillStyle="white";ctx.fill();}
- let ax=cx+hold*s;ctx.strokeStyle="lime";
- ctx.beginPath();ctx.moveTo(ax,15);ctx.lineTo(ax,45);ctx.stroke();
-}
-function calc(){
- let dist=+d.value,wsv=+ws.value,taz=+ta.value,waz=+wa.value,zv=+z.value;
- let cross=wsv*Math.sin(norm(taz-waz)*Math.PI/180);
- let hold=dist*cross/1400;
- r.innerHTML=`Hold: <b>${Math.abs(hold).toFixed(2)} mil ${hold>=0?"RIGHT":"LEFT"}</b><br>Crosswind: ${cross.toFixed(2)} m/s`;
- pso.innerHTML=`PSO-1: <b>${Math.abs(hold).toFixed(2)} marks ${hold>=0?"RIGHT":"LEFT"}</b>`;
- let pm=pointMil(zv),spacing=Math.abs(hold)/pm;
- let bz=bestZoom(hold);
- art.innerHTML=`ART II: <b>${spacing.toFixed(2)} point spacings ${hold>=0?"RIGHT":"LEFT"}</b><br>(Current point = ${pm.toFixed(2)} mil @ ${zv.toFixed(1)}x)<br>Suggested zoom: <b>${bz.toFixed(1)}x</b>`;
- drawPSO(hold);drawART(hold,zv);
-}
-[d,ws,ta,wa,z].forEach(e=>e.oninput=calc);calc();
-</script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reforger Wind Calculator</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="container">
+    <header class="header">
+      <h1>Arma Reforger Wind Calculator</h1>
+    </header>
+
+    <div class="columns">
+      <form class="card inputs" id="calculator" onsubmit="return false;">
+        <section class="section">
+          <h2 class="section-title">Wind</h2>
+          <div class="field-grid">
+            <div class="field">
+              <label for="windSpeed">Speed (m/s)</label>
+              <input id="windSpeed" type="number" min="0" step="0.1" value="10">
+            </div>
+            <div class="field">
+              <label for="windAzimuth">Azimuth (°)</label>
+              <input id="windAzimuth" type="number" step="1" value="180">
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Target</h2>
+          <div class="field-grid">
+            <div class="field">
+              <label for="targetAzimuth">Azimuth (°)</label>
+              <input id="targetAzimuth" type="number" step="1" value="270">
+            </div>
+            <div class="field">
+              <label for="distance">Distance (m)</label>
+              <input id="distance" type="number" min="0" step="1" value="600">
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <h2 class="section-title">Scope</h2>
+          <div class="field">
+            <label for="artZoom">ART II zoom</label>
+            <div class="scope-row">
+              <select id="artZoom">
+                <option value="3">3×</option>
+                <option value="3.5">3.5×</option>
+                <option value="4">4×</option>
+                <option value="4.5">4.5×</option>
+                <option value="5">5×</option>
+                <option value="5.5">5.5×</option>
+                <option value="6">6×</option>
+                <option value="6.5">6.5×</option>
+                <option value="7">7×</option>
+                <option value="7.5">7.5×</option>
+                <option value="8">8×</option>
+                <option value="8.5">8.5×</option>
+                <option value="9">9×</option>
+              </select>
+              <button type="button" class="zoom-suggest" id="zoomSuggest" hidden></button>
+            </div>
+          </div>
+        </section>
+
+        <details class="advanced">
+          <summary>Advanced</summary>
+          <div class="field">
+            <label for="holdFormulaDivisor">Hold formula divisor</label>
+            <input id="holdFormulaDivisor" type="number" min="1" step="1" value="1400" tabindex="-1">
+            <p class="field-hint">Leave at 1400 unless you know what you are changing.</p>
+          </div>
+        </details>
+      </form>
+
+      <section class="output">
+        <div class="card results" id="results" aria-live="polite">
+          <div class="results-primary" id="resultHold">
+            <span class="results-value">—</span>
+          </div>
+          <details class="results-more">
+            <summary>Details</summary>
+            <dl class="results-details">
+              <div class="results-row">
+                <dt>Crosswind</dt>
+                <dd id="resultCrosswind">—</dd>
+              </div>
+              <div class="results-row">
+                <dt>PSO-1</dt>
+                <dd id="resultPso">—</dd>
+              </div>
+              <div class="results-row">
+                <dt>ART II</dt>
+                <dd id="resultArt">—</dd>
+              </div>
+            </dl>
+          </details>
+        </div>
+
+        <div class="reticle-card">
+          <h2 class="reticle-title">PSO-1 <span class="reticle-note">1 tick = 1 mil</span></h2>
+          <canvas id="psoCanvas" width="400" height="90" aria-label="PSO-1 reticle hold visualization"></canvas>
+        </div>
+        <div class="reticle-card">
+          <h2 class="reticle-title">ART II <span class="reticle-note">count dot spacings</span></h2>
+          <canvas id="artCanvas" width="400" height="90" aria-label="ART II reticle hold visualization"></canvas>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

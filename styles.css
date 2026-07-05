@@ -1,0 +1,266 @@
+:root {
+  --color-bg: #1a1a1a;
+  --color-surface: #2a2a2a;
+  --color-surface-raised: #333;
+  --color-border: #555;
+  --color-text: #eee;
+  --color-text-muted: #aaa;
+  --color-accent: #6cb4ee;
+  --color-right: #6ecf6e;
+  --color-left: #e8b84a;
+  --color-suggest: #4a7ab8;
+  --color-suggest-hover: #5a8fd4;
+  --radius: 8px;
+  --gap: 0.75rem;
+  --max-width: 900px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, "Segoe UI", sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  line-height: 1.4;
+}
+
+.container {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}
+
+.header h1 {
+  margin: 0 0 0.6rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: var(--gap);
+  align-items: start;
+}
+
+.card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 0.9rem;
+}
+
+.section {
+  margin-bottom: 0.8rem;
+}
+
+.section-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gap);
+}
+
+.field label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.field-hint {
+  margin: 0.3rem 0 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.field input,
+.field select {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+.field input:focus,
+.field select:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.scope-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.scope-row select {
+  flex: 1;
+}
+
+.zoom-suggest {
+  flex-shrink: 0;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-suggest);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.zoom-suggest:hover {
+  background: var(--color-suggest-hover);
+}
+
+.zoom-suggest:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+#artZoom option.suggested {
+  font-weight: 700;
+  background: #3a5a80;
+}
+
+.advanced {
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+}
+
+.advanced summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.advanced summary:hover {
+  color: var(--color-text);
+}
+
+.advanced .field {
+  margin-top: 0.5rem;
+}
+
+.output {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.results {
+  border: 1px solid var(--color-border);
+  padding: 0.6rem 0.9rem;
+}
+
+.results-primary {
+  text-align: center;
+  padding: 0.25rem 0;
+}
+
+.results-value {
+  font-size: 1.9rem;
+  font-weight: 700;
+}
+
+.results.direction-right .results-value {
+  color: var(--color-right);
+}
+
+.results.direction-left .results-value {
+  color: var(--color-left);
+}
+
+.results-more {
+  font-size: 0.85rem;
+}
+
+.results-more summary {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.results-more summary:hover {
+  color: var(--color-text);
+}
+
+.results-details {
+  margin: 0.4rem 0 0;
+}
+
+.results-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.results-row:last-child {
+  border-bottom: none;
+}
+
+.results-row dt {
+  margin: 0;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.results-row dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.reticle-card {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  padding: 0.6rem 0.9rem;
+}
+
+.reticle-title {
+  margin: 0 0 0.4rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.reticle-note {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
+  margin-left: 0.5rem;
+}
+
+.reticle-card canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  background: #15181b;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+}
+
+@media (max-width: 720px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}
