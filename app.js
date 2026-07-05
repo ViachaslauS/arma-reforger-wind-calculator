@@ -17,6 +17,13 @@ const ART_DOT_PIXEL_OFFSET = 28;
 const ART_BAR_PIXEL_OFFSET =
   ART_DOT_PIXEL_OFFSET * (ART_INNER_BAR_MRAD_FACTOR / ART_DOT_MRAD_FACTOR);
 
+const SOLDIER_HEIGHT_M = 1.8;
+// Fraction of the soldier image height from the top of the head down to the chest,
+// used to align the chest with the scope's horizontal line
+const SOLDIER_CHEST_FROM_TOP = 0.25;
+// Allow the scope window to grow when the soldier is too tall to fit
+const MAX_CANVAS_HEIGHT = 420;
+
 const DEFAULTS = {
   distance: 600,
   windSpeed: 10,
@@ -24,7 +31,11 @@ const DEFAULTS = {
   windAzimuth: 180,
   artZoom: 3,
   holdFormulaDivisor: DEFAULT_HOLD_FORMULA_DIVISOR,
+  targetMarker: "stick",
 };
+
+const soldierImage = new Image();
+soldierImage.src = "res/soldier.png";
 
 const elements = {
   windSpeed: document.getElementById("windSpeed"),
@@ -32,6 +43,7 @@ const elements = {
   targetAzimuth: document.getElementById("targetAzimuth"),
   distance: document.getElementById("distance"),
   artZoom: document.getElementById("artZoom"),
+  targetMarker: document.getElementById("targetMarker"),
   holdFormulaDivisor: document.getElementById("holdFormulaDivisor"),
   zoomSuggest: document.getElementById("zoomSuggest"),
   results: document.getElementById("results"),
@@ -93,14 +105,44 @@ function formatDirectionLabel(holdMilValue) {
   return `${magnitude} mil ${direction}`;
 }
 
-function setupCanvas(canvas) {
+function setupCanvas(canvas, height) {
   const dpr = window.devicePixelRatio || 1;
   canvas.width = CANVAS_WIDTH * dpr;
-  canvas.height = CANVAS_HEIGHT * dpr;
+  canvas.height = height * dpr;
 
   const ctx = canvas.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return ctx;
+}
+
+// Soldier angular height in mrad at the given distance
+function soldierMilAt(distance) {
+  return distance > 0 ? (SOLDIER_HEIGHT_M / distance) * 1000 : null;
+}
+
+// Grow the scope window when the soldier would not fit at the default height
+function canvasHeightFor(soldierPixelHeight) {
+  if (soldierPixelHeight === null) {
+    return CANVAS_HEIGHT;
+  }
+  const needed = Math.ceil(soldierPixelHeight * 1.5) + 16;
+  return Math.min(MAX_CANVAS_HEIGHT, Math.max(CANVAS_HEIGHT, needed));
+}
+
+// Draws the soldier so his chest sits on the scope's horizontal line.
+// Returns false when the image is not available yet.
+function drawSoldier(ctx, x, cy, pixelHeight) {
+  if (!soldierImage.complete || !soldierImage.naturalWidth) {
+    return false;
+  }
+
+  const width = pixelHeight * (soldierImage.naturalWidth / soldierImage.naturalHeight);
+  const top = cy - pixelHeight * SOLDIER_CHEST_FROM_TOP;
+  // The artwork is dark line art; invert it so it stays visible on the dark canvas
+  ctx.filter = "invert(1)";
+  ctx.drawImage(soldierImage, x - width / 2, top, width, pixelHeight);
+  ctx.filter = "none";
+  return true;
 }
 
 function clampToCanvas(x) {
@@ -118,14 +160,18 @@ function drawHoldStick(ctx, x, y, halfHeight) {
 
 // PSO-1: graduated windage scale of standalone vertical 1-mrad ticks (no line
 // crossing them, like the real reticle), horizontal lines only outside the scale
-function drawPsoReticle(ctx, holdMilValue) {
+function drawPsoReticle(ctx, height, holdMilValue, soldierPixelHeight) {
   const cx = CANVAS_WIDTH / 2;
-  const cy = CANVAS_HEIGHT / 2;
+  const cy = height / 2;
   const scale = PSO_PIXELS_PER_MIL;
   const color = "#e6e6e6";
 
   ctx.fillStyle = "#15181b";
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.fillRect(0, 0, CANVAS_WIDTH, height);
+
+  const holdX = clampToCanvas(cx + holdMilValue * scale);
+  const soldierDrawn =
+    soldierPixelHeight !== null && drawSoldier(ctx, holdX, cy, soldierPixelHeight);
 
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
@@ -165,20 +211,27 @@ function drawPsoReticle(ctx, holdMilValue) {
     }
   }
 
-  drawHoldStick(ctx, clampToCanvas(cx + holdMilValue * scale), cy, 14);
+  if (!soldierDrawn) {
+    drawHoldStick(ctx, holdX, cy, 14);
+  }
 }
 
 // ART II: thin crosshair with center vertical line, thick outer bars, and two
 // fixed ranging dots. SFP scope: the reticle never moves with zoom; only the
 // mrad value of each element changes. Bar position uses the measured geometry:
 // bars sit 40.5/7.5 = 5.4 dot spacings from center.
-function drawArtReticle(ctx, holdMilValue, zoom) {
+function drawArtReticle(ctx, height, holdMilValue, zoom, soldierPixelHeight) {
   const cx = CANVAS_WIDTH / 2;
-  const cy = CANVAS_HEIGHT / 2;
+  const cy = height / 2;
   const color = "#e6e6e6";
 
   ctx.fillStyle = "#15181b";
-  ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+  ctx.fillRect(0, 0, CANVAS_WIDTH, height);
+
+  const pixelsPerMil = ART_DOT_PIXEL_OFFSET / pointMilAtZoom(zoom);
+  const holdX = clampToCanvas(cx + holdMilValue * pixelsPerMil);
+  const soldierDrawn =
+    soldierPixelHeight !== null && drawSoldier(ctx, holdX, cy, soldierPixelHeight);
 
   ctx.strokeStyle = color;
   ctx.fillStyle = color;
@@ -193,7 +246,7 @@ function drawArtReticle(ctx, holdMilValue, zoom) {
   // Thin vertical line marking the scope center
   ctx.beginPath();
   ctx.moveTo(cx, 8);
-  ctx.lineTo(cx, CANVAS_HEIGHT - 8);
+  ctx.lineTo(cx, height - 8);
   ctx.stroke();
 
   // Thick bars, flat ends facing center at the measured 40.5/zoom position
@@ -212,9 +265,9 @@ function drawArtReticle(ctx, holdMilValue, zoom) {
     ctx.fill();
   }
 
-  // Hold position scales with zoom: one dot spacing = pointMilAtZoom(zoom) mrad
-  const pixelsPerMil = ART_DOT_PIXEL_OFFSET / pointMilAtZoom(zoom);
-  drawHoldStick(ctx, clampToCanvas(cx + holdMilValue * pixelsPerMil), cy, 14);
+  if (!soldierDrawn) {
+    drawHoldStick(ctx, holdX, cy, 14);
+  }
 }
 
 function readInputs() {
@@ -225,6 +278,7 @@ function readInputs() {
     targetAzimuth: Number(elements.targetAzimuth.value),
     windAzimuth: Number(elements.windAzimuth.value),
     artZoom: Number(elements.artZoom.value),
+    targetMarker: elements.targetMarker.value,
   };
 }
 
@@ -249,6 +303,7 @@ function loadSettings() {
     elements.targetAzimuth.value = saved.targetAzimuth ?? DEFAULTS.targetAzimuth;
     elements.windAzimuth.value = saved.windAzimuth ?? DEFAULTS.windAzimuth;
     elements.artZoom.value = String(saved.artZoom ?? DEFAULTS.artZoom);
+    elements.targetMarker.value = saved.targetMarker ?? DEFAULTS.targetMarker;
   } catch {
     // Ignore corrupt storage
   }
@@ -304,11 +359,18 @@ function calculate() {
 
   renderResults(hold, crosswind, inputs.artZoom, suggested);
 
-  const psoCtx = setupCanvas(elements.psoCanvas);
-  drawPsoReticle(psoCtx, hold);
+  const soldierMil = inputs.targetMarker === "soldier" ? soldierMilAt(inputs.distance) : null;
 
-  const artCtx = setupCanvas(elements.artCanvas);
-  drawArtReticle(artCtx, hold, inputs.artZoom);
+  const psoSoldierPx = soldierMil !== null ? soldierMil * PSO_PIXELS_PER_MIL : null;
+  const psoHeight = canvasHeightFor(psoSoldierPx);
+  const psoCtx = setupCanvas(elements.psoCanvas, psoHeight);
+  drawPsoReticle(psoCtx, psoHeight, hold, psoSoldierPx);
+
+  const artPixelsPerMil = ART_DOT_PIXEL_OFFSET / pointMilAtZoom(inputs.artZoom);
+  const artSoldierPx = soldierMil !== null ? soldierMil * artPixelsPerMil : null;
+  const artHeight = canvasHeightFor(artSoldierPx);
+  const artCtx = setupCanvas(elements.artCanvas, artHeight);
+  drawArtReticle(artCtx, artHeight, hold, inputs.artZoom, artSoldierPx);
 
   saveSettings();
 }
@@ -322,6 +384,7 @@ function init() {
     elements.targetAzimuth,
     elements.distance,
     elements.artZoom,
+    elements.targetMarker,
     elements.holdFormulaDivisor,
   ];
 
@@ -338,6 +401,7 @@ function init() {
   }
 
   elements.zoomSuggest.addEventListener("click", applySuggestedZoom);
+  soldierImage.addEventListener("load", calculate);
 
   calculate();
 }
